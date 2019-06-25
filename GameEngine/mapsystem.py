@@ -1341,14 +1341,42 @@ class Tileset:
 		pass
 
 	def load_B(self):
-		pass
+		tileset_picture = pygame.image.load("GameAssets\\Tilesets\\pictures\\{}.png".format(TILESETS[self.tileset_id]["B"])).convert_alpha()
+		nb_tile_x = tileset_picture.get_width()//48
+		nb_tile_y = tileset_picture.get_height()//48
+		for j in range(nb_tile_y):
+			for i in range(nb_tile_x//2):
+				tile = Tile()
+				tile.load_picture(TILESETS[self.tileset_id]["B"], (i*cts.TILE_SIZE, j*cts.TILE_SIZE), type="unique")
+				self.tiles["B"].append(tile)
+
+		for j in range(nb_tile_y):
+			for i in range(nb_tile_x//2):
+				tile = Tile()
+				tile.load_picture(TILESETS[self.tileset_id]["B"], ((i+nb_tile_x//2)*cts.TILE_SIZE, j*cts.TILE_SIZE), type="unique")
+				self.tiles["B"].append(tile)
 
 	def load_C(self):
-		pass
+		tileset_picture = pygame.image.load("GameAssets\\Tilesets\\pictures\\{}.png".format(TILESETS[self.tileset_id]["C"])).convert_alpha()
+		nb_tile_x = tileset_picture.get_width()//48
+		nb_tile_y = tileset_picture.get_height()//48
+		for j in range(nb_tile_y):
+			for i in range(nb_tile_x//2):
+				tile = Tile()
+				tile.load_picture(TILESETS[self.tileset_id]["C"], (i*cts.TILE_SIZE, j*cts.TILE_SIZE), type="unique")
+				self.tiles["C"].append(tile)
+
+		for j in range(nb_tile_y):
+			for i in range(nb_tile_x//2):
+				tile = Tile()
+				tile.load_picture(TILESETS[self.tileset_id]["C"], ((i+nb_tile_x//2)*cts.TILE_SIZE, j*cts.TILE_SIZE), type="unique")
+				self.tiles["C"].append(tile)
 
 	def __getitem__(self, index):
 		picture, pos = index
 		return self.tiles[picture][pos]
+
+TILESETS_OBJECTS = [Tileset(i) for i in range(len(TILESETS))]
 
 class Map:
 	"""
@@ -1356,7 +1384,7 @@ class Map:
 	"""
 	def __init__(self, size, tileset_id, tiles=[]):
 		self.size = size
-		self.tileset = Tileset(tileset_id)
+		self.tileset = TILESETS_OBJECTS[tileset_id]
 		self.tile_map = [[[[] for _ in range(self.size[1])] for _ in range(self.size[0])] for _ in range(3)]
 		self.load_tiles(tiles)
 
