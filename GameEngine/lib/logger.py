@@ -1,18 +1,20 @@
 import os
 import datetime
-from termcolor import colored, cprint
+from lib import console
 from threading import Thread
 from multiprocessing import Queue
 
-if os.name == "nt":
-    import colorama
-
 class Logger:
 
-    def __init__(self, log_abs_path):
+    def __init__(self, log_abs_path, con=None, cons_enabled=True):
 
-        if os.name == "nt":
-            colorama.init()
+
+        if con == None and cons_enabled == True:
+            self.cons = console.Console()
+        else:
+            self.cons = console
+
+        self.cons_enabled = cons_enabled
 
         self.running = True
 
@@ -27,7 +29,10 @@ class Logger:
         self.threads = []
 
         self.threads.append(Thread(target=self.writer, args=(self.to_write,), daemon=True).start())
-        self.threads.append(Thread(target=self.printer, args=(self.to_log,), daemon=True).start())
+
+        if self.cons_enabled == True:
+            self.threads.append(Thread(target=self.printer, args=(self.to_log,), daemon=True).start())
+        
 
 
     def getDate(self):
@@ -42,9 +47,14 @@ class Logger:
                     pass
 
     def printer(self, q):
-        while self.running:
+        while self.cons_enabled:
             while not q.empty():
-                print(q.get())
+                msg = q.get()
+                if len(msg) == 2:
+                    self.cons.cprint(msg[0], msg[1])
+                else:
+                    self.cons.cprint(msg[0])
+        self.cons.stop()
         
     def openFile(self):
         try:
@@ -74,6 +84,31 @@ class Logger:
             print("Logger failed to close the log file.")
             print(error)
 
+    def garbageCollect(self):
+        for t in self.threads:
+            if not t.isAlive():
+                del t
+
+    def openConsole(self, console=None):
+        if self.cons == None and self.cons_enabled == False:
+            if console == None:
+                self.cons = console.Console()
+            else:
+                self.cons = console
+            self.garbageCollect()
+            self.threads.append(Thread(target=self.printer, args=(self.to_log,), daemon=True).start())
+            self.cons_enabled = True
+        else:
+            self.log("A console is already runnig.")
+
+    def closeConsole(self):
+        if self.cons != None and self.cons_enabled == True:
+            self.cons_enabled = False
+        else:
+            self.log("There is no console to close.")
+            
+            
+
     def log(self, text, msgtype="default"):
         if not self.running:
             print("The logger is stopped and can't log anymore.")
@@ -81,16 +116,20 @@ class Logger:
             try:
                 format_text = "[{}] {}".format(self.getDate(), text)
                 if msgtype == "error":
-                    self.to_log.put(colored("<ERROR> " + format_text, "red"))
+                    if self.cons_enabled:
+                        self.to_log.put(("<ERROR> " + format_text, "red"))
                     self.to_write.put("<ERROR> " + format_text)
                 elif msgtype == "info":
-                    self.to_log.put(colored("<INFO> " + format_text, "cyan"))
+                    if self.cons_enabled:
+                        self.to_log.put(("<INFO> " + format_text, "cyan"))
                     self.to_write.put("<INFO> " + format_text)
                 elif msgtype == "warning":
-                    self.to_log.put(colored("<WARNING> " + format_text, "yellow"))
+                    if self.cons_enabled:
+                        self.to_log.put(("<WARNING> " + format_text, "yellow"))
                     self.to_write.put("<WARNING> " + format_text)
                 else:
-                    self.to_log.put(format_text)
+                    if self.cons_enabled:
+                        self.to_log.put((format_text,)) ##It is a TUPLE !
                     self.to_write.put(format_text)
             except(Exception) as error:
                 print("Logger failed to log the message.")
@@ -104,9 +143,8 @@ class Logger:
             pass
 
         self.running = False
+        self.closeConsole()
         self.closeFile()
-        if os.name == "nt":
-            colorama.deinit()
 
     def __del__(self):
         try:
@@ -117,8 +155,8 @@ class Logger:
                 pass
 
             self.running = False
+            self.closeConsole()
             self.closeFile()
-            if os.name == "nt":
-                colorama.deinit()
+            
         except(Exception):
             pass
