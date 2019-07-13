@@ -12,7 +12,7 @@ class Logger:
         if con == None and cons_enabled == True:
             self.cons = console.Console()
         else:
-            self.cons = console
+            self.cons = con
 
         self.cons_enabled = cons_enabled
 
@@ -32,6 +32,8 @@ class Logger:
 
         if self.cons_enabled == True:
             self.threads.append(Thread(target=self.printer, args=(self.to_log,), daemon=True).start())
+
+        self.log("Logger now running.", "info")
         
 
 
